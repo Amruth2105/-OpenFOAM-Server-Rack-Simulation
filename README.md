@@ -11,10 +11,10 @@ This simulation models **natural convection heat transfer** in a data center roo
 
 ### Key Features
 
-- 🌡️ **Thermal analysis** of server rack heat dissipation
-- 🌀 **Natural convection** buoyancy-driven flow
-- 🔥 **Heat source modeling** via setFields initialization
-- 📊 **Steady-state RANS** simulation with k-ε turbulence
+-  **Thermal analysis** of server rack heat dissipation
+-  **Natural convection** buoyancy-driven flow
+-  **Heat source modeling** via setFields initialization
+-  **Steady-state RANS** simulation with k-ε turbulence
 
 ## Simulation Parameters
 

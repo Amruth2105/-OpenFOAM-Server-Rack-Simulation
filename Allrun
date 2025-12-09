@@ -1,0 +1,69 @@
+#!/bin/bash
+#------------------------------------------------------------------------------
+# Allrun script for Server Rack Thermal Simulation
+#------------------------------------------------------------------------------
+
+# Source OpenFOAM
+. /opt/openfoam12/etc/bashrc
+
+# Clean previous runs
+./Allclean
+
+echo "=========================================="
+echo "Server Rack Thermal Analysis - OpenFOAM"
+echo "=========================================="
+
+# Create base mesh
+echo ""
+echo "Step 1: Creating base mesh with blockMesh..."
+blockMesh
+
+# Check mesh quality
+echo ""
+echo "Step 2: Checking mesh quality..."
+checkMesh
+
+# Optional: Run snappyHexMesh for detailed geometry
+# Uncomment the following lines if you want the detailed rack geometry
+# echo ""
+# echo "Step 3: Running snappyHexMesh for rack geometry..."
+# snappyHexMesh -overwrite
+
+# Initialize fields
+echo ""
+echo "Step 3: Initializing fields..."
+cp -r 0 0.orig
+
+# Run solver
+echo ""
+echo "Step 4: Running buoyantSimpleFoam solver..."
+echo "This may take several minutes..."
+buoyantSimpleFoam | tee log.buoyantSimpleFoam
+
+# Post-processing
+echo ""
+echo "Step 5: Post-processing..."
+
+# Calculate y+ (wall distance)
+echo "Calculating y+..."
+postProcess -func yPlus -latestTime
+
+# Calculate heat flux
+echo "Calculating wall heat flux..."
+postProcess -func wallHeatFlux -latestTime
+
+echo ""
+echo "=========================================="
+echo "Simulation Complete!"
+echo "=========================================="
+echo ""
+echo "Results saved in latest time directory"
+echo "Open ParaView to visualize:"
+echo "  paraFoam"
+echo ""
+echo "Key outputs:"
+echo "  - Temperature distribution (T)"
+echo "  - Velocity field (U)"
+echo "  - Pressure field (p, p_rgh)"
+echo "  - Wall heat flux"
+echo ""

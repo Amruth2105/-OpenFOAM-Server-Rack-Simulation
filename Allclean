@@ -1,0 +1,32 @@
+#!/bin/bash
+#------------------------------------------------------------------------------
+# Allclean script for Server Rack Thermal Simulation
+#------------------------------------------------------------------------------
+
+# Source OpenFOAM
+. /opt/openfoam12/etc/bashrc
+
+echo "Cleaning case..."
+
+# Clean time directories (keep 0)
+foamListTimes -rm
+
+# Remove mesh
+rm -rf constant/polyMesh
+
+# Remove processor directories (parallel runs)
+rm -rf processor*
+
+# Remove log files
+rm -f log.*
+
+# Remove postProcessing
+rm -rf postProcessing
+
+# Restore original 0 directory if backup exists
+if [ -d 0.orig ]; then
+    rm -rf 0
+    cp -r 0.orig 0
+fi
+
+echo "Done!"

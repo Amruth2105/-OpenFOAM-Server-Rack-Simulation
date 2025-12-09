@@ -1,0 +1,42 @@
+# OpenFOAM generated files
+[1-9]*
+[1-9][0-9]*
+processor*
+postProcessing/
+VTK/
+
+# Log files
+log.*
+*.log
+
+# Mesh files (regeneratable)
+constant/polyMesh/
+
+# PyFoam files
+*.analyzed
+*.analyzed.1
+PlyParser_*
+
+# Backup files
+*~
+*.bak
+*.orig
+
+# Editor files
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# But keep these
+!0/
+!constant/g
+!constant/physicalProperties
+!constant/momentumTransport
+!constant/transportProperties
+!constant/turbulenceProperties
+!constant/thermophysicalProperties
+!system/

@@ -13,7 +13,7 @@ This simulation models **natural convection heat transfer** in a data center roo
 
 -  **Thermal analysis** of server rack heat dissipation
 -  **Natural convection** buoyancy-driven flow
--  **Heat source modeling** via setFields initialization
+-  **Heat source modelling** via `setFields` initialisation
 -  **Steady-state RANS** simulation with k-ε turbulence
 
 ## Simulation Parameters
@@ -21,9 +21,9 @@ This simulation models **natural convection heat transfer** in a data center roo
 | Parameter | Value |
 |-----------|-------|
 | **Domain size** | 2m × 2.5m × 1m |
-| **Rack location** | Centered (0.7-1.3m × 0.1-2.1m × 0.1-0.9m) |
+| **Rack location** | Centred (0.7–1.3m × 0.1–2.1m × 0.1–0.9m) |
 | **Mesh cells** | 40,000 hexahedra |
-| **Solver** | `foamRun -solver fluid` |
+| **Solver** | `foamRun` (fluid solver, steady-state) |
 | **Turbulence model** | k-epsilon (RAS) |
 | **Thermodynamics** | Boussinesq approximation |
 
@@ -33,13 +33,13 @@ This simulation models **natural convection heat transfer** in a data center roo
 |----------|----------|-------------|
 | Floor | No-slip | 300 K (fixed) |
 | Ceiling | No-slip | Zero gradient |
-| Walls | No-slip | Zero gradient |
-| Server rack zone | - | 330 K (initial) |
+| Walls (inlet/outlet/frontAndBack) | No-slip | Zero gradient |
+| Server rack zone (internal) | — | 330 K (initial via `setFields`) |
 
 ## Prerequisites
 
 - **OpenFOAM 12** (Foundation version)
-- **ParaView** for visualization (optional)
+- **ParaView** for visualisation (optional)
 
 ### Installing OpenFOAM 12 on Ubuntu/WSL
 
@@ -64,14 +64,13 @@ source ~/.bashrc
 git clone https://github.com/Amruth2105/-OpenFOAM-Server-Rack-Simulation.git
 cd -OpenFOAM-Server-Rack-Simulation
 
-# Generate mesh
-blockMesh
+# Run the full simulation (mesh, setFields, solve, post-process)
+./Allrun
 
-# Set initial hot zone
-setFields
-
-# Run simulation
-foamRun
+# Or run steps manually:
+blockMesh          # Generate mesh
+setFields          # Set initial hot zone (330 K in rack region)
+foamRun            # Run solver
 
 # View results (requires ParaView)
 paraFoam
@@ -82,25 +81,28 @@ paraFoam
 ```
 serverRack/
 ├── 0/                          # Initial & boundary conditions
-│   ├── U                       # Velocity field
-│   ├── p                       # Pressure field  
-│   ├── p_rgh                   # Pressure (buoyancy-corrected)
 │   ├── T                       # Temperature field
+│   ├── U                       # Velocity field
+│   ├── p                       # Pressure field
+│   ├── p_rgh                   # Pressure (buoyancy-corrected)
 │   ├── k                       # Turbulent kinetic energy
 │   ├── epsilon                 # Turbulent dissipation rate
 │   ├── nut                     # Turbulent viscosity
 │   └── alphat                  # Turbulent thermal diffusivity
 ├── constant/                   # Physical properties
 │   ├── g                       # Gravitational acceleration
-│   ├── physicalProperties      # Thermophysical properties
-│   └── momentumTransport       # Turbulence model settings
+│   ├── physicalProperties      # Thermophysical properties (Boussinesq)
+│   └── momentumTransport       # Turbulence model settings (k-epsilon)
 ├── system/                     # Simulation controls
 │   ├── controlDict             # Run control parameters
-│   ├── fvSchemes               # Discretization schemes
+│   ├── fvSchemes               # Discretisation schemes
 │   ├── fvSolution              # Linear solver settings
 │   ├── blockMeshDict           # Mesh definition
-│   ├── setFieldsDict           # Initial field setup
-│   └── topoSetDict             # Cell zone definitions
+│   ├── setFieldsDict           # Initial field setup (hot zone)
+│   ├── topoSetDict             # Cell zone definitions
+│   └── snappyHexMeshDict       # Detailed geometry meshing (optional)
+├── Allrun                      # Run script
+├── Allclean                    # Clean script
 └── README.md
 ```
 
@@ -114,15 +116,15 @@ After running the simulation, results are saved in time directories (100, 200, .
 - **Hot zone (rack)**: Up to 330 K (57°C) initial, diffuses over time
 - **Thermal plume**: Rising above the rack due to buoyancy
 
-### Visualization
+### Visualisation
 
-Open ParaView to visualize:
-- **Temperature contours** - `T` field
-- **Velocity vectors** - `U` field  
-- **Streamlines** - Air flow patterns
-- **Pressure distribution** - `p_rgh` field
+Open ParaView to visualise:
+- **Temperature contours** — `T` field
+- **Velocity vectors** — `U` field
+- **Streamlines** — Air flow patterns
+- **Pressure distribution** — `p_rgh` field
 
-## Customization
+## Customisation
 
 ### Increase Heat Source
 Edit `system/setFieldsDict`:
@@ -135,7 +137,23 @@ boxToCell
 ```
 
 ### Add Forced Ventilation
-Modify `0/U` to add inlet velocity:
+To convert from natural to forced convection:
+
+1. Change wall patches to `type patch` in `system/blockMeshDict`:
+```cpp
+inlet
+{
+    type patch;
+    ...
+}
+outlet
+{
+    type patch;
+    ...
+}
+```
+
+2. Set inlet velocity in `0/U`:
 ```cpp
 inlet
 {
@@ -143,6 +161,8 @@ inlet
     value           uniform (1 0 0);  // 1 m/s inlet
 }
 ```
+
+3. Update pressure BCs, turbulence BCs, etc. accordingly.
 
 ### Refine Mesh
 Edit `system/blockMeshDict`:
@@ -156,7 +176,7 @@ blocks
 ## Physics
 
 ### Boussinesq Approximation
-The density variation due to temperature is modeled as:
+The density variation due to temperature is modelled as:
 ```
 ρ = ρ₀[1 - β(T - T₀)]
 ```
@@ -165,7 +185,7 @@ where:
 - T₀ = 300 K (reference temperature)
 - β = 0.003 K⁻¹ (thermal expansion coefficient)
 
-### Turbulence Modeling
+### Turbulence Modelling
 The standard k-ε model is used with wall functions for near-wall treatment.
 
 ## Troubleshooting
@@ -178,7 +198,7 @@ The standard k-ε model is used with wall functions for near-wall treatment.
 ### Very Slow Convergence
 1. Reduce relaxation factors for velocity
 2. Use first-order schemes initially
-3. Initialize with potentialFoam
+3. Initialise with potentialFoam
 
 ## License
 
@@ -186,7 +206,7 @@ This project is open source and available under the MIT License.
 
 ## Author
 
-Created for data center thermal CFD analysis with OpenFOAM.
+Created for data centre thermal CFD analysis with OpenFOAM.
 
 ## References
 

@@ -1,6 +1,7 @@
 # OpenFOAM generated files
 [1-9]*
 [1-9][0-9]*
+0.orig/
 processor*
 postProcessing/
 VTK/
@@ -20,7 +21,6 @@ PlyParser_*
 # Backup files
 *~
 *.bak
-*.orig
 
 # Editor files
 .vscode/
@@ -31,12 +31,9 @@ PlyParser_*
 .DS_Store
 Thumbs.db
 
-# But keep these
+# Keep these tracked
 !0/
 !constant/g
 !constant/physicalProperties
 !constant/momentumTransport
-!constant/transportProperties
-!constant/turbulenceProperties
-!constant/thermophysicalProperties
 !system/

@@ -19,27 +19,7 @@ internalField   uniform (0 0 0);
 
 boundaryField
 {
-    inlet
-    {
-        type            noSlip;
-    }
-    
-    outlet
-    {
-        type            noSlip;
-    }
-    
-    floor
-    {
-        type            noSlip;
-    }
-    
-    ceiling
-    {
-        type            noSlip;
-    }
-    
-    frontAndBack
+    "(inlet|outlet|floor|ceiling|frontAndBack)"
     {
         type            noSlip;
     }

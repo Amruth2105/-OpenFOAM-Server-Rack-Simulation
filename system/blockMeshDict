@@ -14,7 +14,7 @@ FoamFile
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 // Domain: 2m (x) x 2.5m (y/height) x 1m (z/depth)
-// Server rack: 0.6m x 2m x 0.8m centered in domain
+// Server rack zone: 0.6m x 2m x 0.8m centered in domain (defined in setFieldsDict)
 
 scale 1;
 
@@ -26,17 +26,8 @@ yMax 2.5;
 zMin 0;
 zMax 1;
 
-// Rack position (centered in x and z)
-rackXMin 0.7;
-rackXMax 1.3;
-rackYMin 0.1;
-rackYMax 2.1;
-rackZMin 0.1;
-rackZMax 0.9;
-
 vertices
 (
-    // Domain corners
     ($xMin $yMin $zMin)   // 0
     ($xMax $yMin $zMin)   // 1
     ($xMax $yMax $zMin)   // 2
@@ -45,18 +36,6 @@ vertices
     ($xMax $yMin $zMax)   // 5
     ($xMax $yMax $zMax)   // 6
     ($xMin $yMax $zMax)   // 7
-    
-    // Rack front face (x = rackXMin)
-    ($rackXMin $rackYMin $rackZMin)   // 8
-    ($rackXMin $rackYMax $rackZMin)   // 9
-    ($rackXMin $rackYMin $rackZMax)   // 10
-    ($rackXMin $rackYMax $rackZMax)   // 11
-    
-    // Rack back face (x = rackXMax)
-    ($rackXMax $rackYMin $rackZMin)   // 12
-    ($rackXMax $rackYMax $rackZMin)   // 13
-    ($rackXMax $rackYMin $rackZMax)   // 14
-    ($rackXMax $rackYMax $rackZMax)   // 15
 );
 
 blocks
@@ -74,19 +53,19 @@ boundary
 (
     inlet
     {
-        type patch;
+        type wall;
         faces
         (
-            (0 4 7 3)  // Left wall as inlet (cold aisle)
+            (0 4 7 3)  // Left wall (cold aisle side)
         );
     }
     
     outlet
     {
-        type patch;
+        type wall;
         faces
         (
-            (1 2 6 5)  // Right wall as outlet (hot aisle)
+            (1 2 6 5)  // Right wall (hot aisle side)
         );
     }
     

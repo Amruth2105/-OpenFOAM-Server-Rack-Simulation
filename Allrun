@@ -3,54 +3,49 @@
 # Allrun script for Server Rack Thermal Simulation
 #------------------------------------------------------------------------------
 
-# Source OpenFOAM
-. /opt/openfoam12/etc/bashrc
+cd "${0%/*}" || exit 1
+
+# Source OpenFOAM run functions
+. ${WM_PROJECT_DIR:?}/bin/tools/RunFunctions
 
 # Clean previous runs
 ./Allclean
 
 echo "=========================================="
-echo "Server Rack Thermal Analysis - OpenFOAM"
+echo "Server Rack Thermal Analysis - OpenFOAM 12"
 echo "=========================================="
 
-# Create base mesh
+# Step 1: Create base mesh
 echo ""
 echo "Step 1: Creating base mesh with blockMesh..."
-blockMesh
+runApplication blockMesh
 
-# Check mesh quality
+# Step 2: Check mesh quality
 echo ""
 echo "Step 2: Checking mesh quality..."
-checkMesh
+runApplication checkMesh
 
-# Optional: Run snappyHexMesh for detailed geometry
-# Uncomment the following lines if you want the detailed rack geometry
-# echo ""
-# echo "Step 3: Running snappyHexMesh for rack geometry..."
-# snappyHexMesh -overwrite
+# Optional: Run snappyHexMesh for detailed rack geometry
+# Uncomment to enable:
+# runApplication snappyHexMesh -overwrite
 
-# Initialize fields
+# Step 3: Initialise temperature field (hot zone in server rack region)
 echo ""
-echo "Step 3: Initializing fields..."
+echo "Step 3: Initialising fields with setFields..."
 cp -r 0 0.orig
+runApplication setFields
 
-# Run solver
+# Step 4: Run solver
 echo ""
-echo "Step 4: Running buoyantSimpleFoam solver..."
+echo "Step 4: Running foamRun (steady-state buoyant flow)..."
 echo "This may take several minutes..."
-buoyantSimpleFoam | tee log.buoyantSimpleFoam
+runApplication foamRun
 
-# Post-processing
+# Step 5: Post-processing
 echo ""
 echo "Step 5: Post-processing..."
-
-# Calculate y+ (wall distance)
-echo "Calculating y+..."
-postProcess -func yPlus -latestTime
-
-# Calculate heat flux
-echo "Calculating wall heat flux..."
-postProcess -func wallHeatFlux -latestTime
+runApplication -s yPlus postProcess -func yPlus -latestTime
+runApplication -s wallHeatFlux postProcess -func wallHeatFlux -latestTime
 
 echo ""
 echo "=========================================="

@@ -15,7 +15,7 @@ FoamFile
 
 defaultFieldValues
 (
-    volScalarFieldValue T 293    // Default 20°C
+    volScalarFieldValue T 300    // Ambient temperature (27°C)
 );
 
 regions

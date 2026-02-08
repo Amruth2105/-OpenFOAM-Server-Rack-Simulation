@@ -1,0 +1,36 @@
+# Git files
+.git
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# OpenFOAM generated directories (will be regenerated)
+[1-9]*
+[1-9][0-9]*
+processor*
+postProcessing/
+VTK/
+0.orig/
+
+# Logs from previous runs
+log.*
+
+# Build artifacts
+*.o
+*.so
+*.exe
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Results from previous runs (mounted as volume)
+results/

@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  openfoam:
+    build: .
+    container_name: server-rack-sim
+    volumes:
+      # Mount results directory to persist output
+      - ./results:/home/openfoam/serverRack/results
+    command: ./Allrun
+    # Uncomment below for interactive shell access
+    # stdin_open: true
+    # tty: true
+    # command: /bin/bash

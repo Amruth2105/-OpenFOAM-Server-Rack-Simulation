@@ -19,6 +19,19 @@ internalField   uniform 300;
 
 boundaryField
 {
+    inlet
+    {
+        type            fixedValue;
+        value           uniform 290;    // CRAC supply at 17°C
+    }
+
+    outlet
+    {
+        type            inletOutlet;
+        inletValue      uniform 300;
+        value           uniform 300;
+    }
+
     floor
     {
         type            fixedValue;
@@ -30,7 +43,7 @@ boundaryField
         type            zeroGradient;
     }
 
-    "(inlet|outlet|frontAndBack)"
+    frontAndBack
     {
         type            zeroGradient;
     }

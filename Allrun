@@ -1,6 +1,8 @@
 #!/bin/bash
 #------------------------------------------------------------------------------
 # Allrun script for Server Rack Thermal Simulation
+# Physics: Forced convection + buoyancy (Boussinesq) with k-epsilon turbulence
+# Heat source: fvOptions fixedTemperatureConstraint on serverRack cellZone
 #------------------------------------------------------------------------------
 
 cd "${0%/*}" || exit 1
@@ -13,11 +15,13 @@ cd "${0%/*}" || exit 1
 
 echo "=========================================="
 echo "Server Rack Thermal Analysis - OpenFOAM 12"
+echo "  Forced convection + buoyancy"
+echo "  135k cell mesh | k-epsilon | Boussinesq"
 echo "=========================================="
 
 # Step 1: Create base mesh
 echo ""
-echo "Step 1: Creating base mesh with blockMesh..."
+echo "Step 1: Creating base mesh with blockMesh (135k cells)..."
 runApplication blockMesh
 
 # Step 2: Check mesh quality
@@ -25,25 +29,30 @@ echo ""
 echo "Step 2: Checking mesh quality..."
 runApplication checkMesh
 
+# Step 3: Create cell zones for fvOptions heat source
+echo ""
+echo "Step 3: Creating server rack cell zone with topoSet..."
+runApplication topoSet
+
 # Optional: Run snappyHexMesh for detailed rack geometry
 # Uncomment to enable:
 # runApplication snappyHexMesh -overwrite
 
-# Step 3: Initialise temperature field (hot zone in server rack region)
+# Step 4: Initialise temperature field (hot zone in server rack region)
 echo ""
-echo "Step 3: Initialising fields with setFields..."
+echo "Step 4: Initialising fields with setFields..."
 cp -r 0 0.orig
 runApplication setFields
 
-# Step 4: Run solver
+# Step 5: Run solver
 echo ""
-echo "Step 4: Running foamRun (steady-state buoyant flow)..."
+echo "Step 5: Running foamRun (steady-state buoyant flow)..."
 echo "This may take several minutes..."
 runApplication foamRun
 
-# Step 5: Post-processing
+# Step 6: Post-processing
 echo ""
-echo "Step 5: Post-processing..."
+echo "Step 6: Post-processing..."
 runApplication -s yPlus postProcess -func yPlus -latestTime
 runApplication -s wallHeatFlux postProcess -func wallHeatFlux -latestTime
 

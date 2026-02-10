@@ -8,35 +8,22 @@
 FoamFile
 {
     format      ascii;
-    class       volScalarField;
-    object      alphat;
+    class       dictionary;
+    location    "constant";
+    object      fvOptions;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-dimensions      [1 -1 -1 0 0 0 0];
-
-internalField   uniform 0;
-
-boundaryField
+// Continuous heat source: keeps server rack zone at 330 K
+// This models servers dissipating power continuously
+serverRackHeatSource
 {
-    inlet
-    {
-        type            calculated;
-        value           uniform 0;
-    }
+    type            fixedTemperatureConstraint;
+    selectionMode   cellZone;
+    cellZone        serverRack;
 
-    outlet
-    {
-        type            calculated;
-        value           uniform 0;
-    }
-
-    "(floor|ceiling|frontAndBack)"
-    {
-        type            compressible::alphatWallFunction;
-        Prt             0.85;
-        value           $internalField;
-    }
+    mode            uniform;
+    temperature     330;
 }
 
 // ************************************************************************* //

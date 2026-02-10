@@ -19,7 +19,19 @@ internalField   uniform 0;
 
 boundaryField
 {
-    "(inlet|outlet|floor|ceiling|frontAndBack)"
+    inlet
+    {
+        type            fixedFluxPressure;
+        value           $internalField;
+    }
+
+    outlet
+    {
+        type            fixedValue;
+        value           uniform 0;      // Pressure reference at outlet
+    }
+
+    "(floor|ceiling|frontAndBack)"
     {
         type            fixedFluxPressure;
         value           $internalField;

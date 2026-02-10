@@ -19,7 +19,20 @@ internalField   uniform 0.01;
 
 boundaryField
 {
-    "(inlet|outlet|floor|ceiling|frontAndBack)"
+    inlet
+    {
+        type            fixedValue;
+        value           uniform 0.01;
+    }
+
+    outlet
+    {
+        type            inletOutlet;
+        inletValue      uniform 0.01;
+        value           uniform 0.01;
+    }
+
+    "(floor|ceiling|frontAndBack)"
     {
         type            epsilonWallFunction;
         value           $internalField;

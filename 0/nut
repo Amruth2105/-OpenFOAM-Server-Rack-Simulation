@@ -19,7 +19,19 @@ internalField   uniform 0;
 
 boundaryField
 {
-    "(inlet|outlet|floor|ceiling|frontAndBack)"
+    inlet
+    {
+        type            calculated;
+        value           uniform 0;
+    }
+
+    outlet
+    {
+        type            calculated;
+        value           uniform 0;
+    }
+
+    "(floor|ceiling|frontAndBack)"
     {
         type            nutkWallFunction;
         value           $internalField;

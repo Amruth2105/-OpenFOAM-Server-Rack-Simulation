@@ -7,14 +7,40 @@ A computational fluid dynamics (CFD) simulation of thermal airflow around a sing
 
 ## Overview
 
-This simulation models **natural convection heat transfer** in a data center room section containing a server rack. It uses the Boussinesq approximation for buoyancy-driven flow with the k-epsilon turbulence model.
+This simulation models **forced and natural convection heat transfer** in a data center room section containing a server rack. Cold air is supplied from a CRAC (Computer Room Air Conditioning) unit at the inlet, flows across the rack where it absorbs heat, and exits via the hot aisle return.
 
 ### Key Features
 
--  **Thermal analysis** of server rack heat dissipation
--  **Natural convection** buoyancy-driven flow
--  **Heat source modelling** via `setFields` initialisation
--  **Steady-state RANS** simulation with k-ε turbulence
+-  **Forced convection** — CRAC supply at 1 m/s, 290 K (17°C)
+-  **Continuous heat source** — `fvOptions` keeps rack zone at 330 K
+-  **Buoyancy coupling** — Boussinesq approximation for thermal plume
+-  **Steady-state RANS** — k-ε turbulence with wall functions
+-  **135k cell mesh** — 3× refinement over initial 40k mesh
+
+## Domain Geometry
+
+```
+         2.0 m
+    ◄────────────────►
+    ┌─────────────────┐  ▲
+    │    CEILING       │  │
+    │   (zeroGradient) │  │
+    │                  │  │
+    │   ┌──────┐       │  │
+    │   │SERVER│       │  │
+ I  │   │ RACK │       │ O│  2.5 m
+ N  │   │330 K │       │ U│  (height)
+ L  │   │fvOpt │       │ T│
+ E  │   │      │       │ L│
+ T  │   │0.6m× │       │ E│
+    │   │2.0m  │       │ T│
+ →→→│   └──────┘       │→→→
+ 1m/s   x:0.7─1.3     │  │
+ 290K│                  │  │
+    │    FLOOR (300 K)  │  ▼
+    └─────────────────┘
+         z-depth: 1.0 m (frontAndBack walls)
+```
 
 ## Simulation Parameters
 
@@ -22,19 +48,30 @@ This simulation models **natural convection heat transfer** in a data center roo
 |-----------|-------|
 | **Domain size** | 2m × 2.5m × 1m |
 | **Rack location** | Centred (0.7–1.3m × 0.1–2.1m × 0.1–0.9m) |
-| **Mesh cells** | 40,000 hexahedra |
+| **Mesh cells** | 135,000 hexahedra (60×75×30) |
 | **Solver** | `foamRun` (fluid solver, steady-state) |
 | **Turbulence model** | k-epsilon (RAS) |
 | **Thermodynamics** | Boussinesq approximation |
+| **Heat source** | `fvOptions` fixedTemperatureConstraint (330 K) |
+| **Inlet velocity** | 1 m/s (CRAC supply) |
+| **Inlet temperature** | 290 K (17°C) |
 
 ### Boundary Conditions
 
-| Boundary | Velocity | Temperature |
-|----------|----------|-------------|
-| Floor | No-slip | 300 K (fixed) |
-| Ceiling | No-slip | Zero gradient |
-| Walls (inlet/outlet/frontAndBack) | No-slip | Zero gradient |
-| Server rack zone (internal) | — | 330 K (initial via `setFields`) |
+| Boundary | Velocity | Temperature | Pressure (p_rgh) |
+|----------|----------|-------------|-------------------|
+| Inlet (left) | 1 m/s fixed | 290 K fixed | fixedFluxPressure |
+| Outlet (right) | inletOutlet | inletOutlet | 0 Pa (reference) |
+| Floor | No-slip | 300 K fixed | fixedFluxPressure |
+| Ceiling | No-slip | Zero gradient | fixedFluxPressure |
+| Front & Back | No-slip | Zero gradient | fixedFluxPressure |
+| Server rack (internal) | — | 330 K (fvOptions) | — |
+
+## Heat Source Modelling
+
+The server rack heat is modelled using `fvOptions` with a `fixedTemperatureConstraint`, which keeps the rack cell zone at a constant 330 K throughout the simulation. This is more physically accurate than setting an initial temperature with `setFields` alone, as it models the continuous heat dissipation of server equipment.
+
+The `serverRack` cell zone is created by `topoSet`, which selects all cells in the box `(0.7 0.1 0.1) (1.3 2.1 0.9)`.
 
 ## Prerequisites
 
@@ -64,16 +101,22 @@ source ~/.bashrc
 git clone https://github.com/Amruth2105/-OpenFOAM-Server-Rack-Simulation.git
 cd -OpenFOAM-Server-Rack-Simulation
 
-# Run the full simulation (mesh, setFields, solve, post-process)
+# Run the full simulation (mesh, topoSet, setFields, solve, post-process)
 ./Allrun
 
 # Or run steps manually:
-blockMesh          # Generate mesh
+blockMesh          # Generate mesh (135k cells)
+checkMesh          # Verify mesh quality
+topoSet            # Create serverRack cell zone
 setFields          # Set initial hot zone (330 K in rack region)
 foamRun            # Run solver
+```
 
-# View results (requires ParaView)
-paraFoam
+### Docker (recommended for Windows/macOS)
+
+```bash
+docker compose build
+docker compose up
 ```
 
 ## File Structure
@@ -92,14 +135,15 @@ serverRack/
 ├── constant/                   # Physical properties
 │   ├── g                       # Gravitational acceleration
 │   ├── physicalProperties      # Thermophysical properties (Boussinesq)
-│   └── momentumTransport       # Turbulence model settings (k-epsilon)
+│   ├── momentumTransport       # Turbulence model settings (k-epsilon)
+│   └── fvOptions               # Heat source (fixedTemperatureConstraint)
 ├── system/                     # Simulation controls
 │   ├── controlDict             # Run control parameters
 │   ├── fvSchemes               # Discretisation schemes
 │   ├── fvSolution              # Linear solver settings
-│   ├── blockMeshDict           # Mesh definition
+│   ├── blockMeshDict           # Mesh definition (135k cells)
 │   ├── setFieldsDict           # Initial field setup (hot zone)
-│   ├── topoSetDict             # Cell zone definitions
+│   ├── topoSetDict             # Cell zone definitions (serverRack)
 │   └── snappyHexMeshDict       # Detailed geometry meshing (optional)
 ├── Allrun                      # Run script
 ├── Allclean                    # Clean script
@@ -110,66 +154,66 @@ serverRack/
 
 After running the simulation, results are saved in time directories (100, 200, ..., 1000).
 
-### Expected Temperature Distribution
+### Expected Thermal Behaviour
 
-- **Ambient (walls)**: 300 K (27°C)
-- **Hot zone (rack)**: Up to 330 K (57°C) initial, diffuses over time
-- **Thermal plume**: Rising above the rack due to buoyancy
+- **Inlet supply**: 290 K (17°C) from CRAC unit
+- **Server rack**: Maintained at 330 K (57°C) by fvOptions
+- **Return air**: Heated air exits through outlet at elevated temperature
+- **Thermal plume**: Buoyancy-driven upward flow above the rack
+- **Floor**: Isothermal at 300 K (27°C)
 
 ### Visualisation
 
 Open ParaView to visualise:
 - **Temperature contours** — `T` field
 - **Velocity vectors** — `U` field
-- **Streamlines** — Air flow patterns
+- **Streamlines** — Air flow patterns from inlet to outlet
 - **Pressure distribution** — `p_rgh` field
+
+```bash
+# View results (requires ParaView)
+paraFoam
+```
 
 ## Customisation
 
-### Increase Heat Source
-Edit `system/setFieldsDict`:
+### Change Heat Source Temperature
+Edit `constant/fvOptions`:
 ```cpp
-boxToCell
+serverRackHeatSource
 {
-    box (0.7 0.1 0.1) (1.3 2.1 0.9);
-    fieldValues ( volScalarFieldValue T 350 );  // Higher temperature
+    type            fixedTemperatureConstraint;
+    selectionMode   cellZone;
+    cellZone        serverRack;
+    mode            uniform;
+    temperature     350;    // Higher temperature
 }
 ```
 
-### Add Forced Ventilation
-To convert from natural to forced convection:
-
-1. Change wall patches to `type patch` in `system/blockMeshDict`:
+### Change Inlet Conditions
+Edit `0/U` and `0/T`:
 ```cpp
-inlet
-{
-    type patch;
-    ...
-}
-outlet
-{
-    type patch;
-    ...
-}
-```
-
-2. Set inlet velocity in `0/U`:
-```cpp
+// In 0/U - increase CRAC supply velocity
 inlet
 {
     type            fixedValue;
-    value           uniform (1 0 0);  // 1 m/s inlet
+    value           uniform (2 0 0);  // 2 m/s inlet
+}
+
+// In 0/T - change supply temperature
+inlet
+{
+    type            fixedValue;
+    value           uniform 285;  // Colder supply (12°C)
 }
 ```
-
-3. Update pressure BCs, turbulence BCs, etc. accordingly.
 
 ### Refine Mesh
 Edit `system/blockMeshDict`:
 ```cpp
 blocks
 (
-    hex (0 1 2 3 4 5 6 7) (80 100 40) simpleGrading (1 1 1)  // 2x refinement
+    hex (0 1 2 3 4 5 6 7) (80 100 40) simpleGrading (1 1 1)  // ~320k cells
 );
 ```
 
@@ -188,11 +232,18 @@ where:
 ### Turbulence Modelling
 The standard k-ε model is used with wall functions for near-wall treatment.
 
+### Forced + Natural Convection
+The simulation combines:
+- **Forced convection**: CRAC supply drives air at 1 m/s across the domain
+- **Natural convection**: Buoyancy (Boussinesq) creates thermal plumes above the rack
+
+The Richardson number (Ri ≈ gβΔTL/U²) indicates the relative importance of buoyancy vs. inertia.
+
 ## Troubleshooting
 
 ### Simulation Diverges
 1. Increase relaxation factors in `fvSolution`
-2. Reduce temperature difference
+2. Reduce temperature difference or inlet velocity
 3. Check mesh quality with `checkMesh`
 
 ### Very Slow Convergence
